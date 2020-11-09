@@ -12,6 +12,7 @@ from PIL import Image
 import scipy.misc, scipy.sparse
 import scipy.sparse.linalg
 from scipy import linalg
+import os
 
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -29,7 +30,7 @@ def compute_depth(mask_array, normal_array, threshold=100):
 			x.append(xT[1])
 			y.append(-xT[0])
 			ind = ind+1
-
+	
 	row = []
 	col = []
 	data = []
@@ -68,6 +69,7 @@ def compute_depth(mask_array, normal_array, threshold=100):
 						data.append(normal[2])
 						b.append(-normal[1])
 						i = i+1
+				#print (xT)
 
 
 	mat = scipy.sparse.coo_matrix((data, (row, col)), shape=(i, ind)).tocsc()
@@ -102,8 +104,10 @@ def run_compute_surface(mask_image, normal_map_image):
 	return depth_map
 
 def main(args):
-	ret = util.read_header_file(args.header)
-	data = run_compute_surface(ret['mask'], args.normal_map)
+	basedir = os.getcwd()
+	ret = util.find_files_path(args.header)
+	os.chdir(basedir)
+	data = run_compute_surface(ret['object'], args.normal_map)
 
 	depth_map = scipy.misc.toimage(data)
 	# albedo_map = scipy.misc.toimage(data[1])

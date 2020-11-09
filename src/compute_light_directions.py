@@ -5,13 +5,14 @@
 # @Last Modified by:   marinheiro
 # @Last Modified time: 2014-09-23 17:26:08
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 import util
 import argparse
 import numpy
 import scipy.misc
 import math
+import os
 
 def filterF(a, threshold):
 	if a > threshold:
@@ -52,18 +53,19 @@ def compute_light_directions(images_files, mask_image_file):
 	for image_file in images_files:
 		image = Image.open(image_file)
 		image_gray = image.convert("L")
-		# image_gray.show()
-		image_array = scipy.misc.fromimage(image_gray)
+		blended = ImageChops.multiply(image_gray, mask_image_gray)
+		#image_gray.show()
+		image_array = scipy.misc.fromimage(blended)
 		centroid = compute_centroid(image_array)
-		# print image_file
-		# print centroid
-		# print mask_centroid
+		print (image_file, mask_image_file)
+		print ("centroid: ", centroid)
+		print ("mask_centroid: ", mask_centroid)
 
 		r = mask_radius
 		dx = centroid[1]-mask_centroid[1]
 		dy = centroid[0]-mask_centroid[0]
 		dy = -dy
-
+		print ("debug: ", r, dx, dy)
 		N = numpy.array([dx/r,
 						 dy/r,
 						 math.sqrt(r*r - dx*dx - dy*dy)/r])
@@ -76,9 +78,11 @@ def compute_light_directions(images_files, mask_image_file):
 
 
 def main(args):
-	ret = util.read_header_file(args.header)
+	basedir = os.getcwd()
+	ret = util.find_files_path(args.header)
 	light_directions = compute_light_directions(ret['images'], ret['mask'])
 
+	os.chdir(basedir)
 	with open(args.output_file, 'w') as output_file:
 		output_file.write('Header: %s\n'%args.header)
 		output_file.write('%d\n'%len(light_directions))

@@ -6,6 +6,7 @@
 # @Last Modified time: 2014-09-23 17:30:08
 
 import os
+import re
 
 def read_header_file(header_file):
 	ret = {}
@@ -35,6 +36,32 @@ def read_header_file(header_file):
 	ret['mask'] = mask
 
 	return ret
+
+def find_files_path(path):
+	ret = {}
+	images = []
+	mask = ""
+	objmask = ''
+	validextensions = {".png"}
+	os.chdir(path)
+	path = os.path.normpath(os.getcwd())
+	print ('path: ', path)
+	for root, dirs, files in os.walk(path):
+		for file in files:
+			if file.endswith(tuple(validextensions)):
+				maskmatch = re.match(r"probe.mask.png", file, re.I)
+				objmatch = re.match(r"object.mask.png", file, re.I)
+				imagematch = re.match(r"[a-z]*.[0-9]*.png", file, re.I)
+				if maskmatch:
+					mask = os.path.join(root, file)
+				if objmatch:
+					objmask = os.path.join(root, file)
+				if imagematch:
+					images.append(os.path.join(root, file))
+	ret['images'] = images
+	ret['mask'] = mask
+	ret['object'] = objmask
+	return (ret)
 
 def read_lights_file(lights_file):
 	lights = []

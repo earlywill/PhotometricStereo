@@ -8,11 +8,21 @@
 import util
 import argparse
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageChops
 import scipy.misc
 from scipy import linalg
+import os
+
+import time;
+
+def printtime():
+	localtime = time.asctime( time.localtime(time.time()) )
+	print ("Local current time :", localtime)
 
 def compute_normals(light_matrix, mask_array, images_array, threshold=100):
+	print ('==============================================')
+	print ('normal')
+	printtime()
 	shap = mask_array.shape
 	shaper = (shap[0], shap[1], 3)
 
@@ -30,10 +40,14 @@ def compute_normals(light_matrix, mask_array, images_array, threshold=100):
 
 			if not np.isnan(np.sum(normal)):
 				normal_map[xT] = normal
-
+	printtime()
+	print ('==============================================')
 	return normal_map
 
 def compute_albedo(light_matrix, mask_array, images_array, normal_map, threshold=100):
+	print ('==============================================')
+	print ('albedo')
+	printtime()
 	shap = mask_array.shape
 	shaper = (shap[0], shap[1], 3)
 
@@ -44,14 +58,14 @@ def compute_albedo(light_matrix, mask_array, images_array, normal_map, threshold
 		if(value > threshold):
 			for (pos, image) in enumerate(images_array):
 				ivec[pos] = image[xT[0], xT[1]]
-
 			i_t = np.dot(light_matrix, normal_map[xT])
 
 			k = np.dot(np.transpose(ivec), i_t)/(np.dot(i_t, i_t))
 
 			if not np.isnan(np.sum(k)):
 				albedo_map[xT] = k
-
+	printtime()
+	print ('==============================================')
 	return albedo_map
 
 def simple_photometric_stereo(images_files, mask_image_file, lights_file, threshold=25):
@@ -70,6 +84,7 @@ def simple_photometric_stereo(images_files, mask_image_file, lights_file, thresh
 		image = Image.open(image_file)
 		image_array = scipy.misc.fromimage(image)
 		image_gray = image.convert("L")
+		blended = ImageChops.multiply(image_gray, mask_image_gray)
 		# image_gray.show()
 
 		image_gray_array = scipy.misc.fromimage(image_gray)
@@ -87,9 +102,11 @@ def simple_photometric_stereo(images_files, mask_image_file, lights_file, thresh
 	return (normal_map, albedo_map)
 
 def main(args):
-	ret = util.read_header_file(args.header)
-	data = simple_photometric_stereo(ret["images"], ret["mask"], args.lights_file)
-
+	basedir = os.getcwd()
+	ret = util.find_files_path(args.header)
+	os.chdir(basedir)
+	data = simple_photometric_stereo(ret["images"], ret["object"], args.lights_file)
+	
 	normal_map = scipy.misc.toimage(data[0])
 	albedo_map = scipy.misc.toimage(data[1])
 
